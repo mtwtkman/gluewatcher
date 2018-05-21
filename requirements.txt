@@ -1,0 +1,3 @@
+bottle
+boto3
+bottle-websocket
