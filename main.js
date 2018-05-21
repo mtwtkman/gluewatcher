@@ -17,16 +17,23 @@ const Filter = {
 const List = {
     data: [],
     conn: new WebSocket('ws://localhost:55301/ws'),
+    refetch: false,
     oninit(vnode) {
         vnode.state.conn.onmessage = ev => {
             console.log(JSON.parse(ev.data));
             vnode.state.data = JSON.parse(ev.data);
+            vnode.state.refetch = true;
             m.redraw();
         };
         vnode.state.conn.onopen = ev => vnode.state.conn.send('hi!');
     },
     onupdate(vnode) {
-        // vnode.state.conn.send('hi!')
+        if (vnode.state.refetch) {
+            setTimeout(() => {
+                vnode.state.conn.send('hi!');
+                vnode.state.refetch = false;
+            }, 1000);
+        }
     },
     view(vnode) {
         return m('ul', vnode.state.data.map(x => {
