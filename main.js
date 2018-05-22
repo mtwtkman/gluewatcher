@@ -1,5 +1,11 @@
 const mainRegion = document.getElementById('main');
 
+const Time = {
+    view(vnode) {
+        return m('div', `${vnode.attrs.fetchedTime} 取得`);
+    },
+};
+
 const Filtering = {
     state: 'all',
     job: 'all',
@@ -91,6 +97,7 @@ const List = {
 const Component = {
     runs: [],
     jobs: [],
+    fetchedTime: '',
     conn: new WebSocket('ws://localhost:55301/ws'),
     oninit(vnode) {
         vnode.state.conn.onmessage = ev => {
@@ -98,6 +105,7 @@ const Component = {
             const data = JSON.parse(ev.data);
             vnode.state.runs = data.runs;
             vnode.state.jobs = data.jobs;
+            vnode.state.fetchedTime = new Date();
             setTimeout(() => vnode.state.conn.send('hi!'), 1000);
             m.redraw();
         };
@@ -106,6 +114,7 @@ const Component = {
     view(vnode) {
         return m(
             'div', [
+                m(Time, {fetchedTime: vnode.state.fetchedTime}),
                 m(FilterState),
                 m(FilterJobs, { jobs: vnode.state.jobs }),
                 m(List, { runs: vnode.state.runs }),
