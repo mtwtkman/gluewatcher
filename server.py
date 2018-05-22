@@ -20,10 +20,14 @@ def benrify():
 
 
 def fetch_jobs():
-    runs = []
+    data = {
+        'runs': [],
+        'jobs': [],
+    }
     for j in sorted([x['Name'] for x in g.get_jobs()['Jobs']]):
+        data['jobs'].append(j)
         job_runs = g.get_job_runs(JobName=j)['JobRuns']
-        runs.append({
+        data['runs'].append({
             'job': j,
             'runs': [{
                 'id': r['Id'],
@@ -32,7 +36,7 @@ def fetch_jobs():
                 'args': r['Arguments'],
             } for r in sorted(job_runs, key=lambda x: x['StartedOn'], reverse=True)],
         })
-    return runs
+    return data
 
 
 @app.route('/jobs')

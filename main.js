@@ -2,15 +2,30 @@ const mainRegion = document.getElementById('main');
 
 const Filtering = {
     state: 'all',
+    job: 'all',
 };
 
 const FilterState = {
     view() {
         return m('div', [
+            m('label', 'State: '),
             m(
                 'select',
                 { oninput: m.withAttr('value', v => Filtering.state = v) },
                 ['all', 'RUNNING', 'FAILED', 'STOPPED', 'SUCCEEDED'].map(x => m('option', { value: x }, x))
+            ),
+        ]);
+    },
+};
+
+const FilterJobs = {
+    view(vnode) {
+        return m('div', [
+            m('label', 'Jobs: '),
+            m(
+                'select',
+                { oninput: m.withAttr('value', v => Filtering.job = v) },
+                ['all', ...vnode.attrs.jobs].map(x => m('option', { value: x }, x)),
             ),
         ]);
     },
@@ -48,22 +63,14 @@ const StateMap = {
 };
 
 const List = {
-    data: [],
-    conn: new WebSocket('ws://localhost:55301/ws'),
-    oninit(vnode) {
-        vnode.state.conn.onmessage = ev => {
-            console.log(JSON.parse(ev.data));
-            vnode.state.data = JSON.parse(ev.data);
-            setTimeout(() => vnode.state.conn.send('hi!'), 1000);
-            m.redraw();
-        };
-        vnode.state.conn.onopen = ev => vnode.state.conn.send('hi!');
-    },
     view(vnode) {
-        return m('ul', vnode.state.data.map(x => {
+        return m('ul', vnode.attrs.runs.filter(x => {
+            if (Filtering.job === 'all') return x;
+            if (x.job === Filtering.job) return x;
+        }).map(x => {
             const runs = x.runs.filter(y => {
-                if (Filtering.state === 'all') return y
-                if (y.state === Filtering.state) return y
+                if (Filtering.state === 'all') return y;
+                if (y.state === Filtering.state) return y;
             });
             if (runs.length === 0) return;
             return m('li', [
@@ -71,7 +78,10 @@ const List = {
                 m(
                     'div',
                     {style: {'margin-left': '1em'}},
-                    runs.map(y => m('div', m(StateMap[y.state], { msg: `${y.started_at}: ${y.state}` })))
+                    runs.map(y => m(
+                        'div',
+                        m(StateMap[y.state], { msg: `${y.started_at}: ${y.state}` })
+                    ))
                 ),
             ])
         }))
@@ -79,11 +89,26 @@ const List = {
 };
 
 const Component = {
-    view() {
+    runs: [],
+    jobs: [],
+    conn: new WebSocket('ws://localhost:55301/ws'),
+    oninit(vnode) {
+        vnode.state.conn.onmessage = ev => {
+            console.log(JSON.parse(ev.data));
+            const data = JSON.parse(ev.data);
+            vnode.state.runs = data.runs;
+            vnode.state.jobs = data.jobs;
+            setTimeout(() => vnode.state.conn.send('hi!'), 1000);
+            m.redraw();
+        };
+        vnode.state.conn.onopen = ev => vnode.state.conn.send('hi!');
+    },
+    view(vnode) {
         return m(
             'div', [
                 m(FilterState),
-                m(List)
+                m(FilterJobs, { jobs: vnode.state.jobs }),
+                m(List, { runs: vnode.state.runs }),
             ]
         );
     },
