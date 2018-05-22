@@ -97,16 +97,30 @@ const List = {
 const Component = {
     runs: [],
     jobs: [],
+    runnings: null,
     fetchedTime: '',
     conn: new WebSocket('ws://localhost:55301/ws'),
     oninit(vnode) {
         vnode.state.conn.onmessage = ev => {
-            console.log(JSON.parse(ev.data));
             const data = JSON.parse(ev.data);
             vnode.state.runs = data.runs;
+            const runnings = new Set(data.runs
+                .filter(x => x.runs.filter(y => y.state === 'RUNNING').length !== 0)
+                .map(x => x.job));
+            if (vnode.state.runnings !== null) {
+                const done = new Set([...vnode.state.runnings].filter(x => !runnings.has(x)));
+                if (done.size > 0) {
+                    new Notification(`FINISHED: ${[...done].join(',')}`);
+                }
+                const started = new Set([...runnings].filter(x => !vnode.state.runnings.has(x)));
+                if (started.size > 0) {
+                    new Notification(`STARTED: ${[...started].join(',')}`);
+                }
+            }
+            vnode.state.runnings = runnings;
             vnode.state.jobs = data.jobs;
             vnode.state.fetchedTime = new Date();
-            setTimeout(() => vnode.state.conn.send('hi!'), 1000);
+            setTimeout(() => vnode.state.conn.send('hi!'), 5000);
             m.redraw();
         };
         vnode.state.conn.onopen = ev => vnode.state.conn.send('hi!');

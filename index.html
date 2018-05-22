@@ -6,6 +6,17 @@
   <body>
     <div id="main"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mithril/1.1.6/mithril.min.js"></script>
+    <script>
+      ;(() => {
+        if (Notification.permission === 'granted') { return }
+        Notification.requestPermission(function (permission) {
+          // If the user accepts, let's create a notification
+          if (permission === "granted") {
+            console.log('granted');
+          }
+        });
+      })();
+    </script>
     <script src="./main.js"></script>
   </body>
 </html>
