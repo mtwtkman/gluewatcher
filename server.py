@@ -11,12 +11,24 @@ app = Bottle()
 g = boto3.client('glue')
 
 
+def as_(t):
+    def _inner(func):
+        def __inner(*args, **kwargs):
+            response.headers['Content-Type'] = t
+            return func(*args, **kwargs)
+        return __inner
+    return _inner
+
+
+J = 'application/json'
+T = 'text/html'
+
+
 @app.hook('after_request')
 def benrify():
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'PUT, GET, POST, DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
-    response.headers['Content-Type'] = 'application/json'
 
 
 def fetch_jobs():
@@ -39,14 +51,25 @@ def fetch_jobs():
     return data
 
 
+@app.route('/')
+@as_(T)
+def index():
+    return open('./index.html').read()
+
+@app.route('/main.js')
+@as_(T)
+def mainjs():
+    return open('./main.js').read()
+
+
 @app.route('/jobs')
+@as_(J)
 def jobs():
     return json.dumps(fetch_jobs())
 
 
-import time
-
 @app.get('/ws', apply=[websocket])
+@as_(J)
 def fetch(ws):
     while True:
         msg = ws.receive()
